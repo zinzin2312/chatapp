@@ -1,12 +1,13 @@
-import socket
 import json
-from threading import Thread
+import socket
+from threading import Thread  # ,  active_count
+
 from user import User
 
 
 def send(msg):
     s.send(bytes(msg, "utf8"))
-    Thread(target=receive).start()
+    # print(active_count())
 
 
 def receive():
@@ -23,23 +24,34 @@ def create_message(msg):
 
 
 """
-Host address and port of the server. Note that the address and port your machine is using is NOT the same
+Specify address and port of the server to connect to.
 """
 
 host = "127.0.0.1"
 port = 33000
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((host, port))
+
+"""
+    Each client will have an unique user
+"""
 user = User()
 
 message = "{init}"
 
 if __name__ == "__main__":
-    while True:
-        if message.startswith("{name}"):
-            old_name = user.name
-            user.change_name(message[6:])
-            message = "I changed my name from " + old_name + " to " + user.name
-            continue
+    Thread(target=receive).start()
+    try:
+        while True:
+            send(create_message(message))
+            if message.startswith("{name}"):
+                old_name = user.name
+                user.change_name(message[6:])
+                message = "I changed my name from " + old_name + " to " + user.name
+                continue
+            if message.startswith("{quit}"):
+                break
+            message = input()
+    finally:
         send(create_message(message))
-        message = input("Say something: ")
+        s.close()
